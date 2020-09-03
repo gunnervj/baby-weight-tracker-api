@@ -1,0 +1,18 @@
+Resources:
+    BBBUserBabyTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+          TableName: ${self:provider.environment.USER_BABY_TABLE_NAME}
+          AttributeDefinitions:
+            - AttributeName: user_id
+              AttributeType: S
+            - AttributeName: baby_id
+              AttributeType: S
+          KeySchema:
+            - AttributeName: user_id
+              KeyType: HASH
+            - AttributeName: baby_id
+              KeyType: RANGE
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1

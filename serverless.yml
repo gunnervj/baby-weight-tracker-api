@@ -1,0 +1,100 @@
+service: baby-weight-tracker-api
+
+package:
+  individually: true
+  exclude:
+    - resources/**
+    - .dynamodb/**
+
+
+frameworkVersion: '>=1.0.0 <2.0.0'  
+custom:
+  serverless-offline:
+    useChildProcesses: true
+  dynamodb:
+    stages:
+      - ${opt:stage, 'dev'}
+      - dev
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'ap-south-1'}
+  environment:
+    DYNAMO_REGION: ${opt:region, 'ap-south-1'}
+    USER_BABY_TABLE_NAME: user-baby-${opt:stage, self:provider.stage}
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - dynamodb:DeleteItem
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:Scan
+        - dynamodb:Query
+        - dynamodb:UpdateItem
+      Resource: 
+        - "Fn::GetAtt": [ BBBUserBabyTable, Arn ]
+functions:
+  add-baby:
+    handler: src/add-baby.handler
+    description: Function to add a baby into database
+    events:
+      - http:
+          path: baby
+          method: post
+          authorizer: aws_iam
+          cors: true
+  update-baby:
+    handler: src/update-baby.handler
+    description: Function to update a baby in database
+    events:
+      - http:
+          path: baby/{baby_id}
+          method: put
+          authorizer: aws_iam
+          cors: true
+  delete-baby:
+    handler: src/delete-baby.handler
+    description: Function to delete a baby from database
+    events:
+      - http:
+          path: baby/{baby_id}
+          method: delete
+          authorizer: aws_iam
+          cors: true
+  get-babies:
+    handler: src/get-babies.handler
+    description: Function to get all details of babies from database
+    events:
+      - http:
+          path: baby
+          method: get
+          authorizer: aws_iam
+          cors: true
+  record-weight:
+    handler: src/record-weight.handler
+    description: Function to record weight of a baby in database
+    events:
+      - http:
+          path: baby/{baby_id}/weight/chart
+          method: post
+          authorizer: aws_iam
+          cors: true
+  delete-weight-record:
+    handler: src/delete-weight-record.handler
+    description: Function to delete a recorded weight of a baby in database
+    events:
+      - http:
+          path: baby/{baby_id}/weight/chart
+          method: delete
+          authorizer: aws_iam
+          cors: true     
+resources:
+  - ${file(resources/dynamodb-resource.yml)}
+  - ${file(resources/api-gateway-errors.yml)}
+
+plugins:
+  - serverless-plugin-include-dependencies
+  - serverless-dynamodb-local
+  - serverless-offline
